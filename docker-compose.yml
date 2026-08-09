@@ -2,7 +2,7 @@
 # OpsFlow — Development Infrastructure
 # =============================================================================
 # Usage: docker compose up -d
-# Bring up PostgreSQL, Redis, RabbitMQ, MinIO, Prometheus, and Grafana.
+# Bring up PostgreSQL, Redis, RabbitMQ, MinIO, Elasticsearch, Prometheus, and Grafana.
 
 services:
   # ---------------------------------------------------------------------------
@@ -75,7 +75,7 @@ services:
       - opsflow-net
 
   # ---------------------------------------------------------------------------
-  # MinIO — S3-compatible object storage
+  # MinIO — S3-compatible object storage for evidence & image attachments
   # ---------------------------------------------------------------------------
   minio:
     image: minio/minio:latest
@@ -96,6 +96,24 @@ services:
       timeout: 10s
       retries: 5
       start_period: 10s
+    networks:
+      - opsflow-net
+
+  # ---------------------------------------------------------------------------
+  # Elasticsearch — Unified search & log indexing
+  # ---------------------------------------------------------------------------
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    container_name: opsflow-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
     networks:
       - opsflow-net
 
@@ -148,6 +166,7 @@ volumes:
   redis_data:
   rabbitmq_data:
   minio_data:
+  elasticsearch_data:
   prometheus_data:
   grafana_data:
 

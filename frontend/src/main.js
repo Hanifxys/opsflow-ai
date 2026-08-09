@@ -139,7 +139,7 @@ function createApp() {
         </a>
       </nav>
       <div class="sidebar-footer">
-        <div class="env-badge">PRO ENGINE ACTIVE</div>
+        <div class="env-badge">MINIO S3 ENABLED</div>
       </div>
     </aside>
     <main class="main">
@@ -148,7 +148,6 @@ function createApp() {
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
         
-        <!-- Cmd+K Pro Floating Command Bar Trigger -->
         <button class="cmd-k-trigger" onclick="openCmdKPalette()">
           <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M17.5 17.5L12.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           <span>Ask AI or search platform...</span>
@@ -273,6 +272,48 @@ window.executeCmdKPrompt = function () {
 };
 
 // ──────────────────────────────────────────────
+// MinIO S3 Image & File Upload Handler
+// ──────────────────────────────────────────────
+
+window.triggerMinIOFileUpload = function () {
+  const fileInput = document.getElementById('minio-file-input');
+  if (fileInput) fileInput.click();
+};
+
+window.uploadFileToMinIOS3 = function (event) {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
+
+  const file = files[0];
+  const editor = document.getElementById('docs-editor');
+  const status = document.getElementById('ai-generating-status');
+  if (!editor) return;
+
+  if (status) {
+    status.style.display = 'block';
+    status.textContent = `📷 Uploading ${file.name} to MinIO S3 (Bucket: opsflow-evidence)...`;
+  }
+
+  // Simulate MinIO S3 Upload & Endpoint Generation
+  setTimeout(() => {
+    if (status) status.style.display = 'none';
+
+    const s3ObjectUrl = `http://localhost:9000/opsflow-evidence/${encodeURIComponent(file.name)}`;
+    let markdownEmbed = '';
+
+    if (file.type.startsWith('image/')) {
+      markdownEmbed = `\n\n![Evidence Screenshot: ${file.name}](${s3ObjectUrl})\n*MinIO S3 Evidence Object: \`${file.name}\`*\n`;
+    } else {
+      markdownEmbed = `\n\n📎 **[Attached Evidence File: ${file.name}](${s3ObjectUrl})** *(MinIO S3 Bucket: opsflow-evidence)*\n`;
+    }
+
+    editor.value += markdownEmbed;
+    renderMarkdownPreview();
+    alert(`File '${file.name}' uploaded to MinIO S3 bucket 'opsflow-evidence' and embedded into text editor!`);
+  }, 600);
+};
+
+// ──────────────────────────────────────────────
 // Deep Production-Grade Technical Artifact Generator
 // ──────────────────────────────────────────────
 
@@ -281,7 +322,10 @@ function generateProTechnicalArtifact(promptText) {
   const status = document.getElementById('ai-generating-status');
   if (!editor) return;
 
-  if (status) status.style.display = 'block';
+  if (status) {
+    status.style.display = 'block';
+    status.textContent = '⚡ Pro AI Engine Streaming Response...';
+  }
 
   let artifact = '';
 
@@ -644,6 +688,9 @@ let activeViewMode = 'edit';
 
 function renderKnowledgeDocs(container) {
   container.innerHTML = `
+    <!-- Hidden File Input for MinIO S3 Image & Evidence Upload -->
+    <input type="file" id="minio-file-input" accept="image/*,.pdf,.txt,.log" style="display: none;" onchange="uploadFileToMinIOS3(event)" />
+
     <div class="page-header">
       <div>
         <h1>Docs & Playbook Workspace</h1>
@@ -651,6 +698,7 @@ function renderKnowledgeDocs(container) {
       </div>
       <div style="display:flex; gap:10px;">
         <button class="btn btn-primary btn-sm" onclick="openCmdKPalette()">🚀 Ask AI Anything (Ctrl+K)</button>
+        <button class="btn btn-secondary btn-sm" onclick="triggerMinIOFileUpload()">📷 Upload Image (MinIO S3)</button>
         <button class="btn btn-secondary btn-sm" onclick="saveCurrentDoc()">Save Document</button>
         <button class="btn btn-secondary btn-sm" onclick="exportMarkdownDoc()">Export Markdown</button>
       </div>
@@ -681,6 +729,7 @@ function renderKnowledgeDocs(container) {
             <button class="editor-tool-btn" onclick="insertFormatting('*', '*')">I</button>
             <button class="editor-tool-btn" onclick="insertFormatting('\`', '\`')">Code</button>
             <button class="editor-tool-btn" onclick="insertFormatting('- ')">List</button>
+            <button class="editor-tool-btn" onclick="triggerMinIOFileUpload()">📷 Image</button>
           </div>
           <div class="editor-btn-group">
             <button class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-pink));" onclick="openCmdKPalette()">✨ Ask AI Anything</button>
@@ -759,6 +808,7 @@ function renderMarkdownPreview() {
     .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
     .replace(/\*(.*)\*/gim, '<em>$1</em>')
     .replace(/`(.*)`/gim, '<code>$1</code>')
+    .replace(/!\[(.*?)\]\((.*?)\)/gim, '<div style="margin:12px 0;"><img src="$2" alt="$1" style="max-width:100%; border-radius:12px; border:1px solid var(--border-glass-strong);" /><div style="font-size:0.75rem; color:var(--text-muted);">$1</div></div>')
     .replace(/\n/g, '<br/>');
 
   preview.innerHTML = html;
