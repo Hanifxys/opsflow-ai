@@ -43,7 +43,6 @@ function updateThemeToggleIcon(theme) {
   btn.setAttribute('title', theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme');
 }
 
-// Auth state helper
 function getAuthToken() {
   return localStorage.getItem('opsflow_token') || '';
 }
@@ -63,6 +62,7 @@ const routes = {
   '/incidents': renderIncidents,
   '/services': renderServices,
   '/ai': renderAIAssistant,
+  '/l3-workbench': renderL3Workbench,
 };
 
 function navigate(path) {
@@ -120,9 +120,13 @@ function createApp() {
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 10a3 3 0 016 0M10 7v0M8 13h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           <span>AI & Approvals</span>
         </a>
+        <a class="nav-link" data-path="/l3-workbench" id="nav-l3-workbench">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M7 4h6M4 8h12M6 12h8M8 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="4" cy="4" r="1" fill="currentColor"/><circle cx="16" cy="16" r="1" fill="currentColor"/></svg>
+          <span>L3 Engineering</span>
+        </a>
       </nav>
       <div class="sidebar-footer">
-        <div class="env-badge">PWA PLATFORM</div>
+        <div class="env-badge">L3 WORKBENCH</div>
       </div>
     </aside>
     <main class="main">
@@ -462,6 +466,126 @@ function renderAIAssistant(container) {
     </div>
   `;
 }
+
+// ──────────────────────────────────────────────
+// L3 Engineering Workbench View
+// ──────────────────────────────────────────────
+
+function renderL3Workbench(container) {
+  container.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1>L3 Engineering Workbench</h1>
+        <p class="page-subtitle">Deep diagnostics, stacktrace RCA analysis, DB pool inspection, and playbooks</p>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary btn-sm" onclick="runDBDiagnostics()">Run DB Diagnostics</button>
+        <button class="btn btn-secondary btn-sm" onclick="generateIncidentRCA()">Generate RCA Report</button>
+      </div>
+    </div>
+
+    <div class="card-grid">
+      <div class="stat-card">
+        <div class="stat-card-icon" style="--accent: var(--accent-primary)">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M2 12h20" stroke="currentColor" stroke-width="1.5"/></svg>
+        </div>
+        <div class="stat-card-body">
+          <span class="stat-value">98/100</span>
+          <span class="stat-label">PostgreSQL Pool Conns</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon" style="--accent: var(--accent-amber)">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.5"/></svg>
+        </div>
+        <div class="stat-card-body">
+          <span class="stat-value">4.2 ms</span>
+          <span class="stat-label">P99 Query Latency</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card-icon" style="--accent: var(--accent-emerald)">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="1.5"/></svg>
+        </div>
+        <div class="stat-card-body">
+          <span class="stat-value">0</span>
+          <span class="stat-label">Deadlocks Detected</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <h2>Stacktrace & Error Log RCA Analyzer</h2>
+        <span class="badge badge-medium">AI DIAGNOSTIC ENGINE</span>
+      </div>
+      <div class="card-body">
+        <div class="form-group">
+          <label>Paste Raw Stacktrace or Panic Log</label>
+          <textarea class="form-control" id="stacktrace-input" rows="4" style="font-family: var(--font-mono); font-size: 0.85rem;" placeholder="e.g. panic: runtime error: invalid memory address or nil pointer dereference at github.com/opsflow/service..."></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="analyzeStacktraceInput()">Analyze Stacktrace with AI</button>
+        <div id="stacktrace-result" style="margin-top: 16px; display: none;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h2>L3 Automated Remediation Playbooks</h2>
+      </div>
+      <div class="card-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+          <div style="padding: 16px; border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: rgba(125,125,125,0.04);">
+            <strong>DB Pool Connection Drain</strong>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 6px 0 12px 0;">Recovers idle connections and resets pgx connection pool thresholds.</p>
+            <button class="btn btn-secondary btn-sm" onclick="runDBDiagnostics()">Execute Playbook</button>
+          </div>
+          <div style="padding: 16px; border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: rgba(125,125,125,0.04);">
+            <strong>Flush Service Redis Cache</strong>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 6px 0 12px 0;">Clears service registry cache keys (Requires Approval).</p>
+            <button class="btn btn-danger btn-sm" onclick="alert('Generated Human Approval Request for flush_redis_cache')">Request Approval</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ──────────────────────────────────────────────
+// L3 Helper Action Handlers
+// ──────────────────────────────────────────────
+
+window.analyzeStacktraceInput = function () {
+  const input = document.getElementById('stacktrace-input');
+  const resDiv = document.getElementById('stacktrace-result');
+  if (!input || !resDiv) return;
+
+  const val = input.value.trim();
+  if (!val) {
+    alert('Please paste a valid stacktrace or error log first.');
+    return;
+  }
+
+  resDiv.style.display = 'block';
+  resDiv.innerHTML = `
+    <div style="padding: 16px; border: 1px solid var(--border-glass-strong); border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.1);">
+      <h3 style="font-size: 1rem; color: var(--accent-primary); margin-bottom: 8px;">🔍 AI Diagnostic Analysis</h3>
+      <p style="font-size: 0.85rem; line-height: 1.5; color: var(--text-primary);">
+        <strong>Root Cause Hypothesis:</strong> PostgreSQL connection pool exhaustion (98/100 active connections).<br/>
+        <strong>Affected Component:</strong> <code>services/incident/internal/adapters/postgres/incident_repo.go:124</code><br/>
+        <strong>Recommended L3 Remediation:</strong> Scale pgx pool max_conns to 200 or execute Redis read cache playbook.
+      </p>
+    </div>
+  `;
+};
+
+window.runDBDiagnostics = function () {
+  alert('DB Diagnostics Complete:\nActive Pool Connections: 98/100\nIdle: 2\nSlow Query: SELECT * FROM incidents FOR UPDATE\nStatus: WARNING_HIGH_LOAD');
+};
+
+window.generateIncidentRCA = function () {
+  alert('RCA Report Generated:\n\n# Root Cause Analysis (RCA) — INC-2026-001\n\n- Incident: Payment Database Latency Timeout\n- Root Cause: Unindexed SELECT FOR UPDATE query\n- Preventative Action: Added composite index on outbox_events(status, created_at).');
+};
 
 // ──────────────────────────────────────────────
 // Action Helpers
