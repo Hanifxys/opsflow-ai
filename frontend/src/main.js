@@ -63,6 +63,7 @@ const routes = {
   '/services': renderServices,
   '/ai': renderAIAssistant,
   '/l3-workbench': renderL3Workbench,
+  '/knowledge-docs': renderKnowledgeDocs,
 };
 
 function navigate(path) {
@@ -124,9 +125,13 @@ function createApp() {
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M7 4h6M4 8h12M6 12h8M8 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="4" cy="4" r="1" fill="currentColor"/><circle cx="16" cy="16" r="1" fill="currentColor"/></svg>
           <span>L3 Engineering</span>
         </a>
+        <a class="nav-link" data-path="/knowledge-docs" id="nav-knowledge-docs">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M4 3h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5"/><path d="M7 7h6M7 11h6M7 15h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span>Docs & Playbooks</span>
+        </a>
       </nav>
       <div class="sidebar-footer">
-        <div class="env-badge">L3 WORKBENCH</div>
+        <div class="env-badge">KNOWLEDGE HUB</div>
       </div>
     </aside>
     <main class="main">
@@ -467,10 +472,6 @@ function renderAIAssistant(container) {
   `;
 }
 
-// ──────────────────────────────────────────────
-// L3 Engineering Workbench View
-// ──────────────────────────────────────────────
-
 function renderL3Workbench(container) {
   container.innerHTML = `
     <div class="page-header">
@@ -528,28 +529,227 @@ function renderL3Workbench(container) {
         <div id="stacktrace-result" style="margin-top: 16px; display: none;"></div>
       </div>
     </div>
+  `;
+}
 
-    <div class="card">
-      <div class="card-header">
-        <h2>L3 Automated Remediation Playbooks</h2>
+// ──────────────────────────────────────────────
+// Docs & Playbook Workspace View (Confluence/Jira Style)
+// ──────────────────────────────────────────────
+
+const preloadedDocs = {
+  rca_postmortem: `# Root Cause Analysis (RCA) — Incident Post-Mortem
+
+## Incident Overview
+- **Incident Key**: INC-2026-001
+- **Severity**: CRITICAL (P1)
+- **Impacted Service**: \`payment-service\`
+- **Start Time**: 2026-08-09T17:45:00Z
+- **Resolution Time**: 2026-08-09T18:15:00Z
+
+## Executive Summary
+Payment processing API experienced HTTP 504 gateway timeouts due to PostgreSQL connection pool exhaustion.
+
+## Root Cause
+Unindexed \`SELECT ... FOR UPDATE\` query in the Outbox processor coupled with a 3x traffic spike caused query execution locks to pile up, exhausting the max 100 \`pgx\` pool connections.
+
+## Remediation Steps
+1. Executed emergency index addition on \`outbox_events(status, created_at)\`.
+2. Increased \`pgx\` connection pool \`max_conns\` from 100 to 250.
+3. Enabled Redis read-through caching in Service Registry.
+
+## Action Items
+- [x] Add DB pool monitoring alerts in Prometheus.
+- [ ] Implement query timeout circuit breaker at API Gateway level.`,
+
+  sop_db_pool: `# Standard Operating Procedure (SOP) — DB Connection Pool Exhaustion
+
+## Trigger Criteria
+- Prometheus Alert: \`PostgreSQLPoolUsage > 90%\`
+- API Gateway returns HTTP 504 Gateway Timeout for \`payment-service\` or \`incident-service\`.
+
+## Diagnostic Steps
+1. Navigate to **L3 Engineering Workbench** -> Click **Run DB Diagnostics**.
+2. Run PostgreSQL lock query:
+\`\`\`sql
+SELECT pid, query, state, age(clock_timestamp(), query_start) 
+FROM pg_stat_activity 
+WHERE state != 'idle' 
+ORDER BY age DESC;
+\`\`\`
+
+## Recovery Actions
+1. **Drain Idle Connections**: Trigger L3 Playbook \`DB Pool Connection Drain\`.
+2. **Scale DB Pool Thresholds**: Update \`DB_MAX_CONNS=250\` in K8s ConfigMap.
+3. **Flush Redis Cache**: Execute sensitive action \`flush_redis_cache\` if cache stale.`,
+
+  oncall_matrix: `# On-Call Escalation Matrix & Basic Knowledge Base
+
+## Escalation Tiers
+| Tier | Role | Primary Contact | SLA Response |
+|------|------|-----------------|--------------|
+| Tier 1 | L1 Operations Desk | \`ops-desk@opsflow.local\` | 15 mins |
+| Tier 2 | L2 DevOps Squad | \`devops-oncall@opsflow.local\` | 30 mins |
+| Tier 3 | L3 Core Infrastructure Engineer | \`l3-eng@opsflow.local\` | Immediate |
+
+## Architecture Overview
+- **API Gateway**: Port 8080
+- **Auth Service**: Port 8081 (JWT + Bcrypt)
+- **Incident Service**: Port 8082 (Outbox Pattern)
+- **Service Registry**: Port 8083 (Redis Cached)
+- **AI Gateway**: Port 8084 (Model Router & Tool Guardrails)
+- **Notification Worker**: Port 8085 (RabbitMQ AMQP)`
+};
+
+let currentDocKey = 'rca_postmortem';
+let activeViewMode = 'edit'; // 'edit' | 'preview' | 'split'
+
+function renderKnowledgeDocs(container) {
+  container.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1>Docs & Playbook Workspace</h1>
+        <p class="page-subtitle">Jira & Confluence style documentation, SOP playbooks, and RCA templates</p>
       </div>
-      <div class="card-body">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-          <div style="padding: 16px; border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: rgba(125,125,125,0.04);">
-            <strong>DB Pool Connection Drain</strong>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 6px 0 12px 0;">Recovers idle connections and resets pgx connection pool thresholds.</p>
-            <button class="btn btn-secondary btn-sm" onclick="runDBDiagnostics()">Execute Playbook</button>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-primary btn-sm" onclick="saveCurrentDoc()">Save Document</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportMarkdownDoc()">Export Markdown</button>
+      </div>
+    </div>
+
+    <div class="docs-workspace">
+      <!-- Left Pane: Template & Document Library -->
+      <div class="docs-sidebar-panel">
+        <h3 style="font-size: 0.9rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">TEMPLATES & DOCS</h3>
+        <div class="docs-tree-list">
+          <div class="docs-tree-item ${currentDocKey === 'rca_postmortem' ? 'active' : ''}" onclick="selectDocTemplate('rca_postmortem')">
+            <span>📄 Incident RCA Post-Mortem</span>
           </div>
-          <div style="padding: 16px; border: 1px solid var(--border-glass); border-radius: var(--radius-md); background: rgba(125,125,125,0.04);">
-            <strong>Flush Service Redis Cache</strong>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 6px 0 12px 0;">Clears service registry cache keys (Requires Approval).</p>
-            <button class="btn btn-danger btn-sm" onclick="alert('Generated Human Approval Request for flush_redis_cache')">Request Approval</button>
+          <div class="docs-tree-item ${currentDocKey === 'sop_db_pool' ? 'active' : ''}" onclick="selectDocTemplate('sop_db_pool')">
+            <span>📋 SOP: DB Pool Exhaustion</span>
           </div>
+          <div class="docs-tree-item ${currentDocKey === 'oncall_matrix' ? 'active' : ''}" onclick="selectDocTemplate('oncall_matrix')">
+            <span>🧠 On-Call Escalation & Architecture</span>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="createNewDoc()">+ New Custom Doc</button>
+      </div>
+
+      <!-- Right Pane: Rich Markdown Text Editor & Live Preview -->
+      <div class="editor-panel">
+        <div class="editor-toolbar-bar">
+          <div class="editor-btn-group">
+            <button class="editor-tool-btn" onclick="insertFormatting('# ')">H1</button>
+            <button class="editor-tool-btn" onclick="insertFormatting('## ')">H2</button>
+            <button class="editor-tool-btn" onclick="insertFormatting('**', '**')">B</button>
+            <button class="editor-tool-btn" onclick="insertFormatting('*', '*')">I</button>
+            <button class="editor-tool-btn" onclick="insertFormatting('\`', '\`')">Code</button>
+            <button class="editor-tool-btn" onclick="insertFormatting('- ')">List</button>
+          </div>
+          <div class="editor-btn-group">
+            <button class="editor-tool-btn ${activeViewMode === 'edit' ? 'active' : ''}" onclick="switchEditorView('edit')">Edit</button>
+            <button class="editor-tool-btn ${activeViewMode === 'preview' ? 'active' : ''}" onclick="switchEditorView('preview')">Preview</button>
+          </div>
+        </div>
+
+        <div class="docs-content-area" id="docs-content-area">
+          <textarea class="docs-textarea-input" id="docs-editor" oninput="handleEditorInput()">${preloadedDocs[currentDocKey]}</textarea>
+          <div class="docs-markdown-preview" id="docs-preview" style="display: none;"></div>
         </div>
       </div>
     </div>
   `;
+
+  renderMarkdownPreview();
 }
+
+window.selectDocTemplate = function (key) {
+  currentDocKey = key;
+  const editor = document.getElementById('docs-editor');
+  if (editor && preloadedDocs[key]) {
+    editor.value = preloadedDocs[key];
+    renderMarkdownPreview();
+  }
+  document.querySelectorAll('.docs-tree-item').forEach((item) => {
+    item.classList.remove('active');
+  });
+  event.currentTarget.classList.add('active');
+};
+
+window.createNewDoc = function () {
+  const editor = document.getElementById('docs-editor');
+  if (editor) {
+    editor.value = `# New Operational Document\n\nWrite document content here using Markdown...`;
+    renderMarkdownPreview();
+  }
+};
+
+window.switchEditorView = function (mode) {
+  activeViewMode = mode;
+  const editor = document.getElementById('docs-editor');
+  const preview = document.getElementById('docs-preview');
+  if (!editor || !preview) return;
+
+  if (mode === 'preview') {
+    editor.style.display = 'none';
+    preview.style.display = 'block';
+    renderMarkdownPreview();
+  } else {
+    editor.style.display = 'block';
+    preview.style.display = 'none';
+  }
+};
+
+window.handleEditorInput = function () {
+  renderMarkdownPreview();
+};
+
+function renderMarkdownPreview() {
+  const editor = document.getElementById('docs-editor');
+  const preview = document.getElementById('docs-preview');
+  if (!editor || !preview) return;
+
+  let raw = editor.value;
+  // Simple markdown renderer
+  let html = raw
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+    .replace(/\*(.*)\*/gim, '<em>$1</em>')
+    .replace(/`(.*)`/gim, '<code>$1</code>')
+    .replace(/\n/g, '<br/>');
+
+  preview.innerHTML = html;
+}
+
+window.insertFormatting = function (prefix, suffix = '') {
+  const editor = document.getElementById('docs-editor');
+  if (!editor) return;
+  const start = editor.selectionStart;
+  const end = editor.selectionEnd;
+  const text = editor.value;
+  const sel = text.substring(start, end);
+  const replacement = prefix + sel + suffix;
+  editor.value = text.substring(0, start) + replacement + text.substring(end);
+  editor.focus();
+  renderMarkdownPreview();
+};
+
+window.saveCurrentDoc = function () {
+  const editor = document.getElementById('docs-editor');
+  if (editor) {
+    localStorage.setItem(`opsflow_doc_${currentDocKey}`, editor.value);
+    alert('Document saved to local storage successfully!');
+  }
+};
+
+window.exportMarkdownDoc = function () {
+  const editor = document.getElementById('docs-editor');
+  if (editor) {
+    navigator.clipboard.writeText(editor.value);
+    alert('Markdown copied to clipboard!');
+  }
+};
 
 // ──────────────────────────────────────────────
 // L3 Helper Action Handlers
