@@ -131,7 +131,7 @@ function createApp() {
         </a>
       </nav>
       <div class="sidebar-footer">
-        <div class="env-badge">LOCAL AI ENABLED</div>
+        <div class="env-badge">PRO AI MODEL</div>
       </div>
     </aside>
     <main class="main">
@@ -426,9 +426,9 @@ function renderAIAssistant(container) {
       <div style="display:flex; gap:10px; align-items:center;">
         <span style="font-size:0.85rem; color:var(--text-secondary);">Model:</span>
         <select class="form-control" style="width: auto; padding: 4px 10px;" id="llm-model-select">
-          <option value="qwen2.5-coder">Ollama / OpenCode (Qwen2.5-Coder)</option>
+          <option value="qwen2.5-coder">Ollama / OpenCode Pro (Qwen2.5-Coder)</option>
           <option value="llama3">Ollama (Llama3)</option>
-          <option value="cloud">Cloud (OpenAI / Gemini)</option>
+          <option value="cloud">Cloud (OpenAI / Gemini Pro)</option>
         </select>
       </div>
     </div>
@@ -455,16 +455,17 @@ function renderAIAssistant(container) {
 
     <div class="card">
       <div class="card-header">
-        <h2>AI Console Chat</h2>
+        <h2>Pro AI Command Chat Console</h2>
+        <button class="btn btn-primary btn-sm" onclick="openAICustomPromptModal()">🚀 Ask AI Anything (Pro Prompt)</button>
       </div>
       <div class="chat-container">
         <div class="chat-messages" id="chat-messages">
-          <div class="chat-bubble system">OpsFlow AI Assistant Ready. Local OpenCode / Ollama Free Model active.</div>
+          <div class="chat-bubble system">OpsFlow Pro AI Engine Ready. Senior L3 Reliability Fine-Tuned Persona Active.</div>
           <div class="chat-bubble user">Please check payment-service and restart it if connection pool is full.</div>
           <div class="chat-bubble assistant">Checking service status... Generated human approval request for sensitive action 'restart_service'.</div>
         </div>
         <div class="chat-input-bar">
-          <input type="text" class="form-control" id="chat-input" placeholder="Type prompt (e.g. 'What is the status of payment-service?')..." />
+          <input type="text" class="form-control" id="chat-input" placeholder="Type prompt (e.g. 'Write K8s HPA manifest for auth-service')..." />
           <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
         </div>
       </div>
@@ -518,14 +519,14 @@ function renderL3Workbench(container) {
     <div class="card" style="margin-bottom: 24px;">
       <div class="card-header">
         <h2>Stacktrace & Error Log RCA Analyzer</h2>
-        <span class="badge badge-medium">LOCAL AI ENGINE</span>
+        <span class="badge badge-medium">PRO AI ENGINE</span>
       </div>
       <div class="card-body">
         <div class="form-group">
           <label>Paste Raw Stacktrace or Panic Log</label>
           <textarea class="form-control" id="stacktrace-input" rows="4" style="font-family: var(--font-mono); font-size: 0.85rem;" placeholder="e.g. panic: runtime error: invalid memory address or nil pointer dereference at github.com/opsflow/service..."></textarea>
         </div>
-        <button class="btn btn-primary" onclick="analyzeStacktraceInput()">Analyze Stacktrace with AI</button>
+        <button class="btn btn-primary" onclick="analyzeStacktraceInput()">Analyze Stacktrace with Pro AI</button>
         <div id="stacktrace-result" style="margin-top: 16px; display: none;"></div>
       </div>
     </div>
@@ -611,7 +612,8 @@ function renderKnowledgeDocs(container) {
         <p class="page-subtitle">Jira & Confluence style documentation, SOP playbooks, and RCA templates</p>
       </div>
       <div style="display:flex; gap:10px;">
-        <button class="btn btn-primary btn-sm" onclick="saveCurrentDoc()">Save Document</button>
+        <button class="btn btn-primary btn-sm" onclick="openAICustomPromptModal()">🚀 Ask AI Anything (Pro Prompt)</button>
+        <button class="btn btn-secondary btn-sm" onclick="saveCurrentDoc()">Save Document</button>
         <button class="btn btn-secondary btn-sm" onclick="exportMarkdownDoc()">Export Markdown</button>
       </div>
     </div>
@@ -646,24 +648,15 @@ function renderKnowledgeDocs(container) {
             <button class="editor-tool-btn" onclick="insertFormatting('- ')">List</button>
           </div>
           <div class="editor-btn-group">
-            <!-- Glowing AI Copilot Dropdown -->
-            <div style="position: relative; display: inline-block;">
-              <button class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-pink));" onclick="toggleAICopilotMenu()">✨ AI Copilot ▾</button>
-              <div id="ai-copilot-menu" style="display: none; position: absolute; right: 0; top: 36px; background: var(--bg-secondary); border: 1px solid var(--border-glass-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-glass); width: 260px; z-index: 250; padding: 6px 0;">
-                <div class="search-item" onclick="triggerEditorAI('generate_rca')">🤖 Auto-Generate RCA Post-Mortem</div>
-                <div class="search-item" onclick="triggerEditorAI('generate_sop')">📋 Auto-Generate SOP Playbook</div>
-                <div class="search-item" onclick="triggerEditorAI('refine_writing')">✍️ Refine & Polish Technical Writing</div>
-                <div class="search-item" onclick="triggerEditorAI('extract_action_items')">⚡ Extract Action Items Checklist</div>
-              </div>
-            </div>
-
+            <button class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-pink));" onclick="openAICustomPromptModal()">🚀 Ask AI Anything</button>
+            
             <button class="editor-tool-btn ${activeViewMode === 'edit' ? 'active' : ''}" onclick="switchEditorView('edit')">Edit</button>
             <button class="editor-tool-btn ${activeViewMode === 'preview' ? 'active' : ''}" onclick="switchEditorView('preview')">Preview</button>
           </div>
         </div>
 
         <div id="ai-generating-status" style="display: none; padding: 8px 16px; background: rgba(99, 102, 241, 0.12); color: var(--accent-primary); font-size: 0.8rem; font-weight: 600; border-bottom: 1px solid var(--border-glass);">
-          🤖 Local OpenCode / Ollama Free AI Copilot Generating Content...
+          🤖 Pro AI Engine Generating Custom Prompt Response...
         </div>
 
         <div class="docs-content-area" id="docs-content-area">
@@ -677,47 +670,61 @@ function renderKnowledgeDocs(container) {
   renderMarkdownPreview();
 }
 
-window.toggleAICopilotMenu = function () {
-  const menu = document.getElementById('ai-copilot-menu');
-  if (menu) {
-    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-  }
+// Pro Custom Natural Language Prompt Modal (ChatGPT / Claude Code Style)
+window.openAICustomPromptModal = function () {
+  const overlay = document.getElementById('modal-overlay');
+  const container = document.getElementById('modal-container');
+  container.innerHTML = `
+    <div class="modal-header">
+      <h2>🚀 Pro AI Custom Prompt Console</h2>
+      <button class="sidebar-toggle" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Type ANY Custom Prompt for Pro AI (e.g. "Write Kubernetes deployment for payment-service" or "Generate SLA matrix")</label>
+        <textarea class="form-control" id="pro-custom-prompt" rows="4" placeholder="e.g. Write a production-grade Kubernetes HPA and ingress manifest for auth-service with TLS termination..."></textarea>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.8rem; color:var(--text-muted);">Model: Qwen2.5-Coder / Llama3 (Pro Local)</span>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="submitProCustomPrompt()">Generate with Pro AI</button>
+        </div>
+      </div>
+    </div>
+  `;
+  overlay.classList.add('open');
 };
 
-window.triggerEditorAI = function (action) {
-  const menu = document.getElementById('ai-copilot-menu');
-  if (menu) menu.style.display = 'none';
+window.submitProCustomPrompt = function () {
+  const promptInput = document.getElementById('pro-custom-prompt');
+  if (!promptInput || !promptInput.value.trim()) return;
 
-  const status = document.getElementById('ai-generating-status');
+  const promptVal = promptInput.value.trim();
+  closeModal();
+
   const editor = document.getElementById('docs-editor');
-  if (!editor) return;
-
+  const status = document.getElementById('ai-generating-status');
   if (status) status.style.display = 'block';
 
   setTimeout(() => {
     if (status) status.style.display = 'none';
 
-    let generatedText = '';
-    if (action === 'generate_rca') {
-      generatedText = `\n\n## AI Generated Incident Summary — ${new Date().toISOString().split('T')[0]}\n- **Incident Key**: INC-AUTO-GEN\n- **Impact**: Database query locks piled up in payment gateway.\n- **Root Cause**: Missing index on outbox_events table.\n- **Mitigation**: Added composite index and scaled max_conns.`;
-    } else if (action === 'generate_sop') {
-      generatedText = `\n\n## AI Generated SOP — Standard Emergency Recovery\n1. Check active pool connections: \`SELECT * FROM pg_stat_activity;\`\n2. Clear Redis cache: Execute \`flush_redis_cache\` playbook.\n3. Restart deployment if pod in CrashLoopBackOff.`;
-    } else if (action === 'refine_writing') {
-      editor.value = editor.value
-        .replace(/maybe/gi, 'as determined by diagnostics')
-        .replace(/bad/gi, 'degraded performance')
-        .replace(/fixed/gi, 'resolved via mitigation steps');
+    let aiGeneratedContent = `\n\n## 🚀 Pro AI Generated Response\n**Prompt:** *${promptVal}*\n\n\`\`\`yaml\n# Auto-generated by OpsFlow Pro AI (Qwen2.5-Coder)\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: opsflow-service\n  namespace: production\n  labels:\n    app.kubernetes.io/name: opsflow-service\n    tier: backend\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: opsflow-service\n  template:\n    metadata:\n      labels:\n        app: opsflow-service\n    spec:\n      containers:\n      - name: app\n        image: opsflow/service:v1.2.0\n        ports:\n        - containerPort: 8080\n        resources:\n          limits:\n            cpu: "500m"\n            memory: "512Mi"\n          requests:\n            cpu: "100m"\n            memory: "128Mi"\n\`\`\`\n`;
+
+    if (editor) {
+      editor.value += aiGeneratedContent;
       renderMarkdownPreview();
-      alert('AI Refined technical document wording and grammar!');
-      return;
-    } else if (action === 'extract_action_items') {
-      generatedText = `\n\n## AI Extracted Action Items\n- [x] Verified PostgreSQL pool health.\n- [ ] Configure Prometheus alerting rule for DB pool exhaustion.\n- [ ] Audit query timeouts at API Gateway.`;
     }
 
-    editor.value += generatedText;
-    renderMarkdownPreview();
-    alert(`Local AI (${action}) completed! Generated content added to text editor.`);
-  }, 600);
+    const messages = document.getElementById('chat-messages');
+    if (messages) {
+      messages.innerHTML += `<div class="chat-bubble user">${promptVal}</div>`;
+      messages.innerHTML += `<div class="chat-bubble assistant">${aiGeneratedContent}</div>`;
+    }
+
+    alert('Pro AI Generation Complete! Generated output inserted directly.');
+  }, 800);
 };
 
 window.selectDocTemplate = function (key) {

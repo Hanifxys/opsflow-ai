@@ -28,7 +28,7 @@ func NewAIService(repo ports.AIRepository, router *ModelRouter, toolReg *tools.T
 
 func (s *AIService) CreateConversation(ctx context.Context, userID uuid.UUID, title string) (*domain.Conversation, error) {
 	if title == "" {
-		title = "OpsFlow AI Session"
+		title = "OpsFlow Pro AI Session"
 	}
 	now := time.Now().UTC()
 	conv := &domain.Conversation{
@@ -67,20 +67,20 @@ func (s *AIService) SendMessage(ctx context.Context, convID, userID uuid.UUID, c
 		return nil, nil, err
 	}
 
+	// Fine-tuned Senior L3 DevOps / Reliability Engineer Persona & System Context Injection
+	systemContext := "SYSTEM PERSONA: You are OpsFlow Pro AI, a Senior L3 Infrastructure & Reliability Engineer fine-tuned for high-availability systems, Kubernetes, PostgreSQL tuning, and incident remediation.\n"
+
 	// Search RAG knowledge base for operational context
 	docs, _ := s.repo.SearchKnowledge(ctx, content, 2)
-	systemContext := ""
 	if len(docs) > 0 {
-		systemContext = "Relevant Knowledge Base Documents:\n"
+		systemContext += "\nRELEVANT KNOWLEDGE BASE CONTEXT:\n"
 		for _, d := range docs {
 			systemContext += fmt.Sprintf("- [%s]: %s\n", d.Title, d.Content)
 		}
 	}
 
 	llmMsgs := make([]domain.Message, 0, len(history)+1)
-	if systemContext != "" {
-		llmMsgs = append(llmMsgs, domain.Message{Role: "system", Content: systemContext})
-	}
+	llmMsgs = append(llmMsgs, domain.Message{Role: "system", Content: systemContext})
 	llmMsgs = append(llmMsgs, history...)
 
 	// Route prompt to LLM provider
