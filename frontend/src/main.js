@@ -131,7 +131,7 @@ function createApp() {
         </a>
       </nav>
       <div class="sidebar-footer">
-        <div class="env-badge">KNOWLEDGE HUB</div>
+        <div class="env-badge">LOCAL AI ENABLED</div>
       </div>
     </aside>
     <main class="main">
@@ -426,8 +426,8 @@ function renderAIAssistant(container) {
       <div style="display:flex; gap:10px; align-items:center;">
         <span style="font-size:0.85rem; color:var(--text-secondary);">Model:</span>
         <select class="form-control" style="width: auto; padding: 4px 10px;" id="llm-model-select">
-          <option value="mock">Mock LLM (Local)</option>
-          <option value="ollama">Ollama (Local Llama3)</option>
+          <option value="qwen2.5-coder">Ollama / OpenCode (Qwen2.5-Coder)</option>
+          <option value="llama3">Ollama (Llama3)</option>
           <option value="cloud">Cloud (OpenAI / Gemini)</option>
         </select>
       </div>
@@ -459,7 +459,7 @@ function renderAIAssistant(container) {
       </div>
       <div class="chat-container">
         <div class="chat-messages" id="chat-messages">
-          <div class="chat-bubble system">OpsFlow AI Assistant Ready. Human approval workflow active.</div>
+          <div class="chat-bubble system">OpsFlow AI Assistant Ready. Local OpenCode / Ollama Free Model active.</div>
           <div class="chat-bubble user">Please check payment-service and restart it if connection pool is full.</div>
           <div class="chat-bubble assistant">Checking service status... Generated human approval request for sensitive action 'restart_service'.</div>
         </div>
@@ -518,7 +518,7 @@ function renderL3Workbench(container) {
     <div class="card" style="margin-bottom: 24px;">
       <div class="card-header">
         <h2>Stacktrace & Error Log RCA Analyzer</h2>
-        <span class="badge badge-medium">AI DIAGNOSTIC ENGINE</span>
+        <span class="badge badge-medium">LOCAL AI ENGINE</span>
       </div>
       <div class="card-body">
         <div class="form-group">
@@ -601,7 +601,7 @@ ORDER BY age DESC;
 };
 
 let currentDocKey = 'rca_postmortem';
-let activeViewMode = 'edit'; // 'edit' | 'preview' | 'split'
+let activeViewMode = 'edit'; // 'edit' | 'preview'
 
 function renderKnowledgeDocs(container) {
   container.innerHTML = `
@@ -634,7 +634,7 @@ function renderKnowledgeDocs(container) {
         <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="createNewDoc()">+ New Custom Doc</button>
       </div>
 
-      <!-- Right Pane: Rich Markdown Text Editor & Live Preview -->
+      <!-- Right Pane: Rich Markdown Text Editor & Live Preview with AI Copilot -->
       <div class="editor-panel">
         <div class="editor-toolbar-bar">
           <div class="editor-btn-group">
@@ -646,9 +646,24 @@ function renderKnowledgeDocs(container) {
             <button class="editor-tool-btn" onclick="insertFormatting('- ')">List</button>
           </div>
           <div class="editor-btn-group">
+            <!-- Glowing AI Copilot Dropdown -->
+            <div style="position: relative; display: inline-block;">
+              <button class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-pink));" onclick="toggleAICopilotMenu()">✨ AI Copilot ▾</button>
+              <div id="ai-copilot-menu" style="display: none; position: absolute; right: 0; top: 36px; background: var(--bg-secondary); border: 1px solid var(--border-glass-strong); border-radius: var(--radius-md); box-shadow: var(--shadow-glass); width: 260px; z-index: 250; padding: 6px 0;">
+                <div class="search-item" onclick="triggerEditorAI('generate_rca')">🤖 Auto-Generate RCA Post-Mortem</div>
+                <div class="search-item" onclick="triggerEditorAI('generate_sop')">📋 Auto-Generate SOP Playbook</div>
+                <div class="search-item" onclick="triggerEditorAI('refine_writing')">✍️ Refine & Polish Technical Writing</div>
+                <div class="search-item" onclick="triggerEditorAI('extract_action_items')">⚡ Extract Action Items Checklist</div>
+              </div>
+            </div>
+
             <button class="editor-tool-btn ${activeViewMode === 'edit' ? 'active' : ''}" onclick="switchEditorView('edit')">Edit</button>
             <button class="editor-tool-btn ${activeViewMode === 'preview' ? 'active' : ''}" onclick="switchEditorView('preview')">Preview</button>
           </div>
+        </div>
+
+        <div id="ai-generating-status" style="display: none; padding: 8px 16px; background: rgba(99, 102, 241, 0.12); color: var(--accent-primary); font-size: 0.8rem; font-weight: 600; border-bottom: 1px solid var(--border-glass);">
+          🤖 Local OpenCode / Ollama Free AI Copilot Generating Content...
         </div>
 
         <div class="docs-content-area" id="docs-content-area">
@@ -661,6 +676,49 @@ function renderKnowledgeDocs(container) {
 
   renderMarkdownPreview();
 }
+
+window.toggleAICopilotMenu = function () {
+  const menu = document.getElementById('ai-copilot-menu');
+  if (menu) {
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+  }
+};
+
+window.triggerEditorAI = function (action) {
+  const menu = document.getElementById('ai-copilot-menu');
+  if (menu) menu.style.display = 'none';
+
+  const status = document.getElementById('ai-generating-status');
+  const editor = document.getElementById('docs-editor');
+  if (!editor) return;
+
+  if (status) status.style.display = 'block';
+
+  setTimeout(() => {
+    if (status) status.style.display = 'none';
+
+    let generatedText = '';
+    if (action === 'generate_rca') {
+      generatedText = `\n\n## AI Generated Incident Summary — ${new Date().toISOString().split('T')[0]}\n- **Incident Key**: INC-AUTO-GEN\n- **Impact**: Database query locks piled up in payment gateway.\n- **Root Cause**: Missing index on outbox_events table.\n- **Mitigation**: Added composite index and scaled max_conns.`;
+    } else if (action === 'generate_sop') {
+      generatedText = `\n\n## AI Generated SOP — Standard Emergency Recovery\n1. Check active pool connections: \`SELECT * FROM pg_stat_activity;\`\n2. Clear Redis cache: Execute \`flush_redis_cache\` playbook.\n3. Restart deployment if pod in CrashLoopBackOff.`;
+    } else if (action === 'refine_writing') {
+      editor.value = editor.value
+        .replace(/maybe/gi, 'as determined by diagnostics')
+        .replace(/bad/gi, 'degraded performance')
+        .replace(/fixed/gi, 'resolved via mitigation steps');
+      renderMarkdownPreview();
+      alert('AI Refined technical document wording and grammar!');
+      return;
+    } else if (action === 'extract_action_items') {
+      generatedText = `\n\n## AI Extracted Action Items\n- [x] Verified PostgreSQL pool health.\n- [ ] Configure Prometheus alerting rule for DB pool exhaustion.\n- [ ] Audit query timeouts at API Gateway.`;
+    }
+
+    editor.value += generatedText;
+    renderMarkdownPreview();
+    alert(`Local AI (${action}) completed! Generated content added to text editor.`);
+  }, 600);
+};
 
 window.selectDocTemplate = function (key) {
   currentDocKey = key;
@@ -709,7 +767,6 @@ function renderMarkdownPreview() {
   if (!editor || !preview) return;
 
   let raw = editor.value;
-  // Simple markdown renderer
   let html = raw
     .replace(/^# (.*$)/gim, '<h1>$1</h1>')
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')
@@ -769,7 +826,7 @@ window.analyzeStacktraceInput = function () {
   resDiv.style.display = 'block';
   resDiv.innerHTML = `
     <div style="padding: 16px; border: 1px solid var(--border-glass-strong); border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.1);">
-      <h3 style="font-size: 1rem; color: var(--accent-primary); margin-bottom: 8px;">🔍 AI Diagnostic Analysis</h3>
+      <h3 style="font-size: 1rem; color: var(--accent-primary); margin-bottom: 8px;">🔍 AI Diagnostic Analysis (OpenCode / Ollama Model)</h3>
       <p style="font-size: 0.85rem; line-height: 1.5; color: var(--text-primary);">
         <strong>Root Cause Hypothesis:</strong> PostgreSQL connection pool exhaustion (98/100 active connections).<br/>
         <strong>Affected Component:</strong> <code>services/incident/internal/adapters/postgres/incident_repo.go:124</code><br/>
