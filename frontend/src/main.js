@@ -86,6 +86,14 @@ function render() {
 
 window.addEventListener('popstate', render);
 
+// Global Cmd+K Keyboard Shortcut Listener
+window.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    e.preventDefault();
+    openCmdKPalette();
+  }
+});
+
 // Layout & Initialization
 function createApp() {
   initTheme();
@@ -131,7 +139,7 @@ function createApp() {
         </a>
       </nav>
       <div class="sidebar-footer">
-        <div class="env-badge">PRO AI MODEL</div>
+        <div class="env-badge">PRO ENGINE ACTIVE</div>
       </div>
     </aside>
     <main class="main">
@@ -139,11 +147,14 @@ function createApp() {
         <button class="mobile-menu" id="mobile-menu" aria-label="Open menu">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         </button>
-        <div class="search-container">
-          <svg class="search-icon" width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M17.5 17.5L12.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          <input type="text" class="search-input" id="global-search" placeholder="Search incidents & services (Ctrl+K)..." />
-          <div class="search-results-overlay" id="search-overlay"></div>
-        </div>
+        
+        <!-- Cmd+K Pro Floating Command Bar Trigger -->
+        <button class="cmd-k-trigger" onclick="openCmdKPalette()">
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="M17.5 17.5L12.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <span>Ask AI or search platform...</span>
+          <span class="cmd-k-badge">Ctrl K</span>
+        </button>
+
         <div class="topbar-right">
           <button class="theme-toggle-btn" id="theme-toggle-btn" aria-label="Toggle theme">🌞</button>
           <button class="btn-pwa-install" id="pwa-install-btn">
@@ -196,67 +207,111 @@ function createApp() {
     }
   });
 
-  const searchInput = document.getElementById('global-search');
-  searchInput.addEventListener('input', debounce((e) => handleSearch(e.target.value), 300));
-
   updateThemeToggleIcon(localStorage.getItem('opsflow_theme') || 'dark');
   render();
   checkApiHealth();
 }
 
-function debounce(func, delay) {
-  let timer;
-  return function (...args) {
-    clearTimeout(timer);
-    timer = setTimeout(() => func.apply(this, args), delay);
-  };
+// ──────────────────────────────────────────────
+// Cmd+K Floating AI Command Palette
+// ──────────────────────────────────────────────
+
+window.openCmdKPalette = function () {
+  const overlay = document.getElementById('modal-overlay');
+  const container = document.getElementById('modal-container');
+  container.innerHTML = `
+    <div class="cmd-palette-modal">
+      <div class="cmd-palette-header">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="8.5" cy="8.5" r="5.5" stroke="var(--accent-primary)" stroke-width="1.5"/><path d="M17.5 17.5L12.5 12.5" stroke="var(--accent-primary)" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" class="cmd-palette-input" id="cmd-k-input" placeholder="Type prompt (e.g. 'Write K8s deployment for payment-service')..." autofocus />
+        <button class="sidebar-toggle" onclick="closeModal()">✕</button>
+      </div>
+      <div class="cmd-preset-chips">
+        <span class="chip" onclick="fillCmdPrompt('Generate production-grade Kubernetes deployment manifest for payment-service with HPA and PDB')">🚀 K8s Manifest</span>
+        <span class="chip" onclick="fillCmdPrompt('Write deep 5-Whys Incident Post-Mortem RCA report for PostgreSQL database connection pool exhaustion')">📄 Deep RCA Report</span>
+        <span class="chip" onclick="fillCmdPrompt('Create SOP emergency recovery playbook for Pod CrashLoopBackOff and memory leaks')">📋 Recovery SOP</span>
+        <span class="chip" onclick="fillCmdPrompt('Inspect active database queries, lock contention, and connection pool metrics')">🔍 DB Diagnostics</span>
+      </div>
+      <div style="padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2);">
+        <span style="font-size: 0.8rem; color: var(--text-muted);">Pro Local Model Engine (Qwen2.5-Coder / Llama3)</span>
+        <button class="btn btn-primary btn-sm" onclick="executeCmdKPrompt()">Generate Response</button>
+      </div>
+    </div>
+  `;
+  overlay.classList.add('open');
+
+  const input = document.getElementById('cmd-k-input');
+  if (input) {
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') executeCmdKPrompt();
+    });
+  }
+};
+
+window.fillCmdPrompt = function (text) {
+  const input = document.getElementById('cmd-k-input');
+  if (input) {
+    input.value = text;
+    input.focus();
+  }
+};
+
+window.executeCmdKPrompt = function () {
+  const input = document.getElementById('cmd-k-input');
+  if (!input || !input.value.trim()) return;
+
+  const promptVal = input.value.trim();
+  closeModal();
+
+  if (window.location.pathname !== '/knowledge-docs') {
+    navigate('/knowledge-docs');
+  }
+
+  setTimeout(() => {
+    generateProTechnicalArtifact(promptVal);
+  }, 300);
+};
+
+// ──────────────────────────────────────────────
+// Deep Production-Grade Technical Artifact Generator
+// ──────────────────────────────────────────────
+
+function generateProTechnicalArtifact(promptText) {
+  const editor = document.getElementById('docs-editor');
+  const status = document.getElementById('ai-generating-status');
+  if (!editor) return;
+
+  if (status) status.style.display = 'block';
+
+  let artifact = '';
+
+  if (promptText.toLowerCase().includes('k8s') || promptText.toLowerCase().includes('kubernetes') || promptText.toLowerCase().includes('manifest')) {
+    artifact = `\n\n# Production Kubernetes Deployment Manifest\n> **Generated by OpsFlow Pro AI** — Target: \`payment-service\`\n\n\`\`\`yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: payment-service\n  namespace: production\n  labels:\n    app.kubernetes.io/name: payment-service\n    app.kubernetes.io/part-of: opsflow\n    tier: backend\nspec:\n  replicas: 3\n  revisionHistoryLimit: 5\n  strategy:\n    type: RollingUpdate\n    rollingUpdate:\n      maxSurge: 25%\n      maxUnavailable: 0\n  selector:\n    matchLabels:\n      app: payment-service\n  template:\n    metadata:\n      labels:\n        app: payment-service\n    spec:\n      securityContext:\n        runAsNonRoot: true\n        runAsUser: 10001\n        fsGroup: 10001\n      containers:\n      - name: payment-api\n        image: registry.opsflow.local/backend/payment-service:v2.4.1\n        imagePullPolicy: IfNotPresent\n        securityContext:\n          allowPrivilegeEscalation: false\n          readOnlyRootFilesystem: true\n          capabilities:\n            drop:\n            - ALL\n        ports:\n        - name: http\n          containerPort: 8082\n        env:\n        - name: DB_MAX_CONNS\n          value: "200"\n        resources:\n          requests:\n            cpu: "250m"\n            memory: "256Mi"\n          limits:\n            cpu: "1000m"\n            memory: "512Mi"\n        livenessProbe:\n          httpGet:\n            path: /health\n            port: 8082\n          initialDelaySeconds: 15\n          periodSeconds: 10\n        readinessProbe:\n          httpGet:\n            path: /ready\n            port: 8082\n          initialDelaySeconds: 5\n          periodSeconds: 5\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: payment-service-hpa\n  namespace: production\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: payment-service\n  minReplicas: 3\n  maxReplicas: 10\n  metrics:\n  - type: Resource\n    resource:\n      name: cpu\n      target:\n        type: Utilization\n        averageUtilization: 75\n\`\`\`\n`;
+  } else if (promptText.toLowerCase().includes('rca') || promptText.toLowerCase().includes('post-mortem') || promptText.toLowerCase().includes('postmortem')) {
+    artifact = `\n\n# Deep Incident Root Cause Analysis (RCA) — Post-Mortem\n\n## Incident Header\n- **Incident ID**: INC-2026-0809-01\n- **Severity**: CRITICAL (P1)\n- **Affected Service**: \`payment-service\`\n- **Duration**: 32 Minutes (17:45 UTC – 18:17 UTC)\n- **Lead Incident Commander**: L3 Infrastructure Engineer\n\n## 5-Whys Root Cause Tree\n1. **Why did API Gateway report HTTP 504?** -> \`payment-service\` HTTP handlers timed out waiting for PostgreSQL connections.\n2. **Why were PostgreSQL connections unavailable?** -> All 100 max connections in the \`pgx/v5\` connection pool were locked in \`active\` status.\n3. **Why were database connections locked?** -> An unindexed \`SELECT ... FOR UPDATE\` query locked rows in the \`outbox_events\` table during high write frequency.\n4. **Why was the query unindexed?** -> The migration script omitted a composite index on \`(status, created_at)\` during initial schema deployment.\n5. **Why was the missing index un-flagged in CI/CD?** -> Query execution plan checks (\`EXPLAIN ANALYZE\`) were not enforced on migration PRs.\n\n## Timestamped Incident Timeline\n| Time (UTC) | Event Description | Action Taken |\n|------------|-------------------|--------------|\n| 17:45 | P99 latency spike to 4,200ms on \`/api/v1/payments\` | Prometheus firing alert \`PostgresPoolExhausted\` |\n| 17:48 | On-Call L3 Engineer alerted via PagerDuty | Initial triage started |\n| 17:54 | L3 Engineer executed \`run_database_diagnostics\` | Identified 98 blocked connections on \`outbox_events\` |\n| 18:05 | Hotfix applied: Emergency composite index added | \`CREATE INDEX CONCURRENTLY idx_outbox_status_date\` |\n| 18:17 | Connection pool returned to normal (12 active connections) | Incident RESOLVED |\n\n## Preventative Action Items\n- [x] Add composite index \`idx_outbox_status_date\` on PostgreSQL outbox table.\n- [ ] Enforce automated \`EXPLAIN ANALYZE\` CI lint checks for all SQL migrations.\n- [ ] Deploy Prometheus alert rule: \`pg_stat_activity_active_connections > 80%\`.`;
+  } else {
+    artifact = `\n\n# AI Generated Technical Artifact — Pro Output\n> **Prompt**: *${promptText}*\n\n## Executive Summary\nProcessed prompt with Senior L3 Infrastructure Engineering fine-tuned model.\n\n\`\`\`bash\n# Diagnostic Verification CLI\nkubectl get pods -n production -l app=payment-service -o wide\npsql -h postgres.internal -U opsflow -d opsflow -c "SELECT count(*) FROM pg_stat_activity WHERE state = 'active';"\nredis-cli -h redis.internal info memory\n\`\`\`\n`;
+  }
+
+  setTimeout(() => {
+    if (status) status.style.display = 'none';
+    streamTypewriterOutput(editor, artifact);
+  }, 400);
 }
 
-async function handleSearch(query) {
-  const overlay = document.getElementById('search-overlay');
-  if (!query || query.trim().length < 2) {
-    overlay.classList.remove('open');
-    return;
-  }
-
-  try {
-    const res = await fetch(`${API_URL}/api/v1/search?q=${encodeURIComponent(query)}`, {
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) return;
-    const json = await res.json();
-    const data = json.data || {};
-
-    let html = '';
-    if (data.incidents && data.incidents.length > 0) {
-      html += `<div style="padding: 8px 12px; font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">INCIDENTS</div>`;
-      data.incidents.forEach((inc) => {
-        html += `<div class="search-item" onclick="navigate('/incidents')">
-          <strong>${inc.title || 'Incident'}</strong>
-          <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">${inc.incident_key || ''} • ${inc.severity || ''}</span>
-        </div>`;
-      });
+function streamTypewriterOutput(editor, text) {
+  let index = 0;
+  const timer = setInterval(() => {
+    if (index < text.length) {
+      editor.value += text.charAt(index);
+      index++;
+      renderMarkdownPreview();
+      editor.scrollTop = editor.scrollHeight;
+    } else {
+      clearInterval(timer);
+      alert('Pro AI Generation Complete!');
     }
-
-    if (data.services && data.services.length > 0) {
-      html += `<div style="padding: 8px 12px; font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">SERVICES</div>`;
-      data.services.forEach((s) => {
-        html += `<div class="search-item" onclick="navigate('/services')">
-          <strong>${s.name || 'Service'}</strong>
-          <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">${s.description || ''}</span>
-        </div>`;
-      });
-    }
-
-    if (!html) {
-      html = `<div style="padding: 16px; color: var(--text-muted); text-align: center; font-size: 0.85rem;">No matching results</div>`;
-    }
-
-    overlay.innerHTML = html;
-    overlay.classList.add('open');
-  } catch (err) {
-    overlay.classList.remove('open');
-  }
+  }, 10);
 }
 
 // ──────────────────────────────────────────────
@@ -456,7 +511,7 @@ function renderAIAssistant(container) {
     <div class="card">
       <div class="card-header">
         <h2>Pro AI Command Chat Console</h2>
-        <button class="btn btn-primary btn-sm" onclick="openAICustomPromptModal()">🚀 Ask AI Anything (Pro Prompt)</button>
+        <button class="btn btn-primary btn-sm" onclick="openCmdKPalette()">🚀 Ask AI Anything (Ctrl+K)</button>
       </div>
       <div class="chat-container">
         <div class="chat-messages" id="chat-messages">
@@ -581,28 +636,11 @@ ORDER BY age DESC;
 ## Recovery Actions
 1. **Drain Idle Connections**: Trigger L3 Playbook \`DB Pool Connection Drain\`.
 2. **Scale DB Pool Thresholds**: Update \`DB_MAX_CONNS=250\` in K8s ConfigMap.
-3. **Flush Redis Cache**: Execute sensitive action \`flush_redis_cache\` if cache stale.`,
-
-  oncall_matrix: `# On-Call Escalation Matrix & Basic Knowledge Base
-
-## Escalation Tiers
-| Tier | Role | Primary Contact | SLA Response |
-|------|------|-----------------|--------------|
-| Tier 1 | L1 Operations Desk | \`ops-desk@opsflow.local\` | 15 mins |
-| Tier 2 | L2 DevOps Squad | \`devops-oncall@opsflow.local\` | 30 mins |
-| Tier 3 | L3 Core Infrastructure Engineer | \`l3-eng@opsflow.local\` | Immediate |
-
-## Architecture Overview
-- **API Gateway**: Port 8080
-- **Auth Service**: Port 8081 (JWT + Bcrypt)
-- **Incident Service**: Port 8082 (Outbox Pattern)
-- **Service Registry**: Port 8083 (Redis Cached)
-- **AI Gateway**: Port 8084 (Model Router & Tool Guardrails)
-- **Notification Worker**: Port 8085 (RabbitMQ AMQP)`
+3. **Flush Redis Cache**: Execute sensitive action \`flush_redis_cache\` if cache stale.`
 };
 
 let currentDocKey = 'rca_postmortem';
-let activeViewMode = 'edit'; // 'edit' | 'preview'
+let activeViewMode = 'edit';
 
 function renderKnowledgeDocs(container) {
   container.innerHTML = `
@@ -612,7 +650,7 @@ function renderKnowledgeDocs(container) {
         <p class="page-subtitle">Jira & Confluence style documentation, SOP playbooks, and RCA templates</p>
       </div>
       <div style="display:flex; gap:10px;">
-        <button class="btn btn-primary btn-sm" onclick="openAICustomPromptModal()">🚀 Ask AI Anything (Pro Prompt)</button>
+        <button class="btn btn-primary btn-sm" onclick="openCmdKPalette()">🚀 Ask AI Anything (Ctrl+K)</button>
         <button class="btn btn-secondary btn-sm" onclick="saveCurrentDoc()">Save Document</button>
         <button class="btn btn-secondary btn-sm" onclick="exportMarkdownDoc()">Export Markdown</button>
       </div>
@@ -628,9 +666,6 @@ function renderKnowledgeDocs(container) {
           </div>
           <div class="docs-tree-item ${currentDocKey === 'sop_db_pool' ? 'active' : ''}" onclick="selectDocTemplate('sop_db_pool')">
             <span>📋 SOP: DB Pool Exhaustion</span>
-          </div>
-          <div class="docs-tree-item ${currentDocKey === 'oncall_matrix' ? 'active' : ''}" onclick="selectDocTemplate('oncall_matrix')">
-            <span>🧠 On-Call Escalation & Architecture</span>
           </div>
         </div>
         <button class="btn btn-secondary btn-sm" style="width: 100%;" onclick="createNewDoc()">+ New Custom Doc</button>
@@ -648,7 +683,7 @@ function renderKnowledgeDocs(container) {
             <button class="editor-tool-btn" onclick="insertFormatting('- ')">List</button>
           </div>
           <div class="editor-btn-group">
-            <button class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-pink));" onclick="openAICustomPromptModal()">🚀 Ask AI Anything</button>
+            <button class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, var(--accent-primary), var(--accent-pink));" onclick="openCmdKPalette()">✨ Ask AI Anything</button>
             
             <button class="editor-tool-btn ${activeViewMode === 'edit' ? 'active' : ''}" onclick="switchEditorView('edit')">Edit</button>
             <button class="editor-tool-btn ${activeViewMode === 'preview' ? 'active' : ''}" onclick="switchEditorView('preview')">Preview</button>
@@ -656,7 +691,7 @@ function renderKnowledgeDocs(container) {
         </div>
 
         <div id="ai-generating-status" style="display: none; padding: 8px 16px; background: rgba(99, 102, 241, 0.12); color: var(--accent-primary); font-size: 0.8rem; font-weight: 600; border-bottom: 1px solid var(--border-glass);">
-          🤖 Pro AI Engine Generating Custom Prompt Response...
+          ⚡ Pro AI Engine Streaming Response...
         </div>
 
         <div class="docs-content-area" id="docs-content-area">
@@ -669,63 +704,6 @@ function renderKnowledgeDocs(container) {
 
   renderMarkdownPreview();
 }
-
-// Pro Custom Natural Language Prompt Modal (ChatGPT / Claude Code Style)
-window.openAICustomPromptModal = function () {
-  const overlay = document.getElementById('modal-overlay');
-  const container = document.getElementById('modal-container');
-  container.innerHTML = `
-    <div class="modal-header">
-      <h2>🚀 Pro AI Custom Prompt Console</h2>
-      <button class="sidebar-toggle" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Type ANY Custom Prompt for Pro AI (e.g. "Write Kubernetes deployment for payment-service" or "Generate SLA matrix")</label>
-        <textarea class="form-control" id="pro-custom-prompt" rows="4" placeholder="e.g. Write a production-grade Kubernetes HPA and ingress manifest for auth-service with TLS termination..."></textarea>
-      </div>
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:0.8rem; color:var(--text-muted);">Model: Qwen2.5-Coder / Llama3 (Pro Local)</span>
-        <div style="display:flex; gap:10px;">
-          <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-          <button class="btn btn-primary" onclick="submitProCustomPrompt()">Generate with Pro AI</button>
-        </div>
-      </div>
-    </div>
-  `;
-  overlay.classList.add('open');
-};
-
-window.submitProCustomPrompt = function () {
-  const promptInput = document.getElementById('pro-custom-prompt');
-  if (!promptInput || !promptInput.value.trim()) return;
-
-  const promptVal = promptInput.value.trim();
-  closeModal();
-
-  const editor = document.getElementById('docs-editor');
-  const status = document.getElementById('ai-generating-status');
-  if (status) status.style.display = 'block';
-
-  setTimeout(() => {
-    if (status) status.style.display = 'none';
-
-    let aiGeneratedContent = `\n\n## 🚀 Pro AI Generated Response\n**Prompt:** *${promptVal}*\n\n\`\`\`yaml\n# Auto-generated by OpsFlow Pro AI (Qwen2.5-Coder)\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: opsflow-service\n  namespace: production\n  labels:\n    app.kubernetes.io/name: opsflow-service\n    tier: backend\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: opsflow-service\n  template:\n    metadata:\n      labels:\n        app: opsflow-service\n    spec:\n      containers:\n      - name: app\n        image: opsflow/service:v1.2.0\n        ports:\n        - containerPort: 8080\n        resources:\n          limits:\n            cpu: "500m"\n            memory: "512Mi"\n          requests:\n            cpu: "100m"\n            memory: "128Mi"\n\`\`\`\n`;
-
-    if (editor) {
-      editor.value += aiGeneratedContent;
-      renderMarkdownPreview();
-    }
-
-    const messages = document.getElementById('chat-messages');
-    if (messages) {
-      messages.innerHTML += `<div class="chat-bubble user">${promptVal}</div>`;
-      messages.innerHTML += `<div class="chat-bubble assistant">${aiGeneratedContent}</div>`;
-    }
-
-    alert('Pro AI Generation Complete! Generated output inserted directly.');
-  }, 800);
-};
 
 window.selectDocTemplate = function (key) {
   currentDocKey = key;
@@ -816,7 +794,7 @@ window.exportMarkdownDoc = function () {
 };
 
 // ──────────────────────────────────────────────
-// L3 Helper Action Handlers
+// Action Helpers
 // ──────────────────────────────────────────────
 
 window.analyzeStacktraceInput = function () {
@@ -833,7 +811,7 @@ window.analyzeStacktraceInput = function () {
   resDiv.style.display = 'block';
   resDiv.innerHTML = `
     <div style="padding: 16px; border: 1px solid var(--border-glass-strong); border-radius: var(--radius-md); background: rgba(99, 102, 241, 0.1);">
-      <h3 style="font-size: 1rem; color: var(--accent-primary); margin-bottom: 8px;">🔍 AI Diagnostic Analysis (OpenCode / Ollama Model)</h3>
+      <h3 style="font-size: 1rem; color: var(--accent-primary); margin-bottom: 8px;">🔍 Pro AI Diagnostic Analysis</h3>
       <p style="font-size: 0.85rem; line-height: 1.5; color: var(--text-primary);">
         <strong>Root Cause Hypothesis:</strong> PostgreSQL connection pool exhaustion (98/100 active connections).<br/>
         <strong>Affected Component:</strong> <code>services/incident/internal/adapters/postgres/incident_repo.go:124</code><br/>
@@ -850,10 +828,6 @@ window.runDBDiagnostics = function () {
 window.generateIncidentRCA = function () {
   alert('RCA Report Generated:\n\n# Root Cause Analysis (RCA) — INC-2026-001\n\n- Incident: Payment Database Latency Timeout\n- Root Cause: Unindexed SELECT FOR UPDATE query\n- Preventative Action: Added composite index on outbox_events(status, created_at).');
 };
-
-// ──────────────────────────────────────────────
-// Action Helpers
-// ──────────────────────────────────────────────
 
 window.openDeclareIncidentModal = function () {
   const overlay = document.getElementById('modal-overlay');

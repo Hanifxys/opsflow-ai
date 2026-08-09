@@ -1,0 +1,34 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'opsflow-gateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['gateway:8080', 'localhost:8080']
+
+  - job_name: 'opsflow-auth-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['auth-service:8081', 'localhost:8081']
+
+  - job_name: 'opsflow-incident-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['incident-service:8082', 'localhost:8082']
+
+  - job_name: 'opsflow-registry-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['registry-service:8083', 'localhost:8083']
+
+  - job_name: 'opsflow-ai-gateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['ai-gateway:8084', 'localhost:8084']
+
+  - job_name: 'opsflow-notification-worker'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['notification-worker:8085', 'localhost:8085']

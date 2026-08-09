@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: 'OpsFlow Dashboards'
+    orgId: 1
+    folder: 'OpsFlow Platform'
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

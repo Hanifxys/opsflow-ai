@@ -2,8 +2,7 @@
 # OpsFlow — Development Infrastructure
 # =============================================================================
 # Usage: docker compose up -d
-# Bring up PostgreSQL, Redis, RabbitMQ, and MinIO for local development.
-# Application services run on the host (not containerized in Phase 0).
+# Bring up PostgreSQL, Redis, RabbitMQ, MinIO, Prometheus, and Grafana.
 
 services:
   # ---------------------------------------------------------------------------
@@ -76,7 +75,7 @@ services:
       - opsflow-net
 
   # ---------------------------------------------------------------------------
-  # MinIO — S3-compatible object storage for evidence/attachments
+  # MinIO — S3-compatible object storage
   # ---------------------------------------------------------------------------
   minio:
     image: minio/minio:latest
@@ -100,11 +99,57 @@ services:
     networks:
       - opsflow-net
 
+  # ---------------------------------------------------------------------------
+  # Prometheus — Metrics scraping and time-series database
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: opsflow-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./deployments/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - opsflow-net
+
+  # ---------------------------------------------------------------------------
+  # Grafana — Observability Dashboard & Visualization
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: opsflow-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./deployments/observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./deployments/observability/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./deployments/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - opsflow-net
+
 volumes:
   postgres_data:
   redis_data:
   rabbitmq_data:
   minio_data:
+  prometheus_data:
+  grafana_data:
 
 networks:
   opsflow-net:
