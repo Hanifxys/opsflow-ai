@@ -21,17 +21,31 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+// Theme Management (Light / Dark)
+function initTheme() {
+  const savedTheme = localStorage.getItem('opsflow_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  updateThemeToggleIcon(savedTheme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('opsflow_theme', next);
+  updateThemeToggleIcon(next);
+}
+
+function updateThemeToggleIcon(theme) {
+  const btn = document.getElementById('theme-toggle-btn');
+  if (!btn) return;
+  btn.innerHTML = theme === 'dark' ? '🌞' : '🌙';
+  btn.setAttribute('title', theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme');
+}
+
 // Auth state helper
 function getAuthToken() {
   return localStorage.getItem('opsflow_token') || '';
-}
-
-function setAuthToken(token) {
-  if (token) {
-    localStorage.setItem('opsflow_token', token);
-  } else {
-    localStorage.removeItem('opsflow_token');
-  }
 }
 
 function getAuthHeaders() {
@@ -73,6 +87,8 @@ window.addEventListener('popstate', render);
 
 // Layout & Initialization
 function createApp() {
+  initTheme();
+
   const app = document.getElementById('app');
   app.innerHTML = `
     <aside class="sidebar" id="sidebar">
@@ -120,6 +136,7 @@ function createApp() {
           <div class="search-results-overlay" id="search-overlay"></div>
         </div>
         <div class="topbar-right">
+          <button class="theme-toggle-btn" id="theme-toggle-btn" aria-label="Toggle theme">🌞</button>
           <button class="btn-pwa-install" id="pwa-install-btn">
             <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 2v10M6 8l4 4 4-4M4 16h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             Install App
@@ -156,6 +173,8 @@ function createApp() {
     document.getElementById('sidebar').classList.toggle('open');
   });
 
+  document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
+
   const pwaBtn = document.getElementById('pwa-install-btn');
   pwaBtn.addEventListener('click', async () => {
     if (deferredInstallPrompt) {
@@ -168,10 +187,10 @@ function createApp() {
     }
   });
 
-  // Global search input listener
   const searchInput = document.getElementById('global-search');
   searchInput.addEventListener('input', debounce((e) => handleSearch(e.target.value), 300));
 
+  updateThemeToggleIcon(localStorage.getItem('opsflow_theme') || 'dark');
   render();
   checkApiHealth();
 }
@@ -201,27 +220,27 @@ async function handleSearch(query) {
 
     let html = '';
     if (data.incidents && data.incidents.length > 0) {
-      html += `<div style="padding: 8px 12px; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">INCIDENTS</div>`;
+      html += `<div style="padding: 8px 12px; font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">INCIDENTS</div>`;
       data.incidents.forEach((inc) => {
         html += `<div class="search-item" onclick="navigate('/incidents')">
           <strong>${inc.title || 'Incident'}</strong>
-          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">${inc.incident_key || ''} • ${inc.severity || ''}</span>
+          <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">${inc.incident_key || ''} • ${inc.severity || ''}</span>
         </div>`;
       });
     }
 
     if (data.services && data.services.length > 0) {
-      html += `<div style="padding: 8px 12px; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">SERVICES</div>`;
+      html += `<div style="padding: 8px 12px; font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">SERVICES</div>`;
       data.services.forEach((s) => {
         html += `<div class="search-item" onclick="navigate('/services')">
           <strong>${s.name || 'Service'}</strong>
-          <span style="font-size: 0.8rem; color: #94a3b8; display: block;">${s.description || ''}</span>
+          <span style="font-size: 0.8rem; color: var(--text-secondary); display: block;">${s.description || ''}</span>
         </div>`;
       });
     }
 
     if (!html) {
-      html = `<div style="padding: 16px; color: #64748b; text-align: center; font-size: 0.85rem;">No matching results</div>`;
+      html = `<div style="padding: 16px; color: var(--text-muted); text-align: center; font-size: 0.85rem;">No matching results</div>`;
     }
 
     overlay.innerHTML = html;
@@ -249,7 +268,7 @@ function renderDashboard(container) {
     </div>
     <div class="card-grid">
       <div class="stat-card">
-        <div class="stat-card-icon" style="--accent: #6366f1">
+        <div class="stat-card-icon" style="--accent: var(--accent-primary)">
           <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="14" width="18" height="7" rx="2" stroke="currentColor" stroke-width="1.5"/></svg>
         </div>
         <div class="stat-card-body">
@@ -258,7 +277,7 @@ function renderDashboard(container) {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-icon" style="--accent: #f43f5e">
+        <div class="stat-card-icon" style="--accent: var(--accent-rose)">
           <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L22 20H2L12 2Z" stroke="currentColor" stroke-width="1.5"/><path d="M12 9v5M12 16v.5" stroke="currentColor" stroke-width="1.5"/></svg>
         </div>
         <div class="stat-card-body">
@@ -267,7 +286,7 @@ function renderDashboard(container) {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-icon" style="--accent: #f59e0b">
+        <div class="stat-card-icon" style="--accent: var(--accent-amber)">
           <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.5"/></svg>
         </div>
         <div class="stat-card-body">
@@ -276,7 +295,7 @@ function renderDashboard(container) {
         </div>
       </div>
       <div class="stat-card">
-        <div class="stat-card-icon" style="--accent: #10b981">
+        <div class="stat-card-icon" style="--accent: var(--accent-emerald)">
           <svg viewBox="0 0 24 24" fill="none"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="1.5"/></svg>
         </div>
         <div class="stat-card-body">
@@ -292,17 +311,17 @@ function renderDashboard(container) {
       </div>
       <div class="card-body" id="recent-activity-list">
         <div style="display: flex; flex-direction: column; gap: 12px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid var(--border-glass);">
             <div>
               <strong>Payment Database Timeout</strong>
-              <span style="display: block; font-size: 0.8rem; color: #94a3b8;">Severity: CRITICAL • State: INVESTIGATING</span>
+              <span style="display: block; font-size: 0.8rem; color: var(--text-secondary);">Severity: CRITICAL • State: INVESTIGATING</span>
             </div>
             <span class="badge badge-critical">CRITICAL</span>
           </div>
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
               <strong>Human Approval Pending: restart_service</strong>
-              <span style="display: block; font-size: 0.8rem; color: #94a3b8;">Requested by AI Model Router for payment-service</span>
+              <span style="display: block; font-size: 0.8rem; color: var(--text-secondary);">Requested by AI Model Router for payment-service</span>
             </div>
             <span class="badge badge-pending">PENDING</span>
           </div>
@@ -370,8 +389,8 @@ function renderServices(container) {
           <span class="badge badge-approved">HEALTHY</span>
         </div>
         <div class="card-body">
-          <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;">Authentication & Role-Based Access Control</p>
-          <div style="font-size: 0.8rem; color: #64748b;">Owner: Core Engineering</div>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">Authentication & Role-Based Access Control</p>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Owner: Core Engineering</div>
         </div>
       </div>
       <div class="card" style="margin-bottom:0;">
@@ -380,8 +399,8 @@ function renderServices(container) {
           <span class="badge badge-critical">DEGRADED</span>
         </div>
         <div class="card-body">
-          <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 12px;">Core Banking Payment Processor</p>
-          <div style="font-size: 0.8rem; color: #64748b;">Owner: Payments Squad</div>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px;">Core Banking Payment Processor</p>
+          <div style="font-size: 0.8rem; color: var(--text-muted);">Owner: Payments Squad</div>
         </div>
       </div>
     </div>
@@ -396,7 +415,7 @@ function renderAIAssistant(container) {
         <p class="page-subtitle">Operational copilot with human-in-the-loop safety guardrails</p>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
-        <span style="font-size:0.85rem; color:#94a3b8;">Model:</span>
+        <span style="font-size:0.85rem; color:var(--text-secondary);">Model:</span>
         <select class="form-control" style="width: auto; padding: 4px 10px;" id="llm-model-select">
           <option value="mock">Mock LLM (Local)</option>
           <option value="ollama">Ollama (Local Llama3)</option>
@@ -416,7 +435,7 @@ function renderAIAssistant(container) {
             <strong>Action Requested: <code>restart_service</code></strong>
             <span class="badge badge-pending">PENDING APPROVAL</span>
           </div>
-          <p style="font-size: 0.85rem; color: #cbd5e1;">Target Service: <code>payment-service</code> (Environment: production)</p>
+          <p style="font-size: 0.85rem; color: var(--text-secondary);">Target Service: <code>payment-service</code> (Environment: production)</p>
           <div style="display: flex; gap: 10px; margin-top: 6px;">
             <button class="btn btn-success btn-sm" onclick="handleApproveAction()">Approve Execution</button>
             <button class="btn btn-danger btn-sm" onclick="handleRejectAction()">Reject Action</button>
@@ -523,7 +542,7 @@ window.handleApproveAction = function () {
   alert('Action APPROVED! Operational tool mutation executed successfully.');
   const queue = document.getElementById('approval-queue-body');
   if (queue) {
-    queue.innerHTML = `<div style="padding: 16px; color: #10b981; font-weight: 500;">✓ Action APPROVED and executed safely. Audit trail recorded.</div>`;
+    queue.innerHTML = `<div style="padding: 16px; color: var(--accent-emerald); font-weight: 500;">✓ Action APPROVED and executed safely. Audit trail recorded.</div>`;
   }
 };
 
@@ -531,7 +550,7 @@ window.handleRejectAction = function () {
   alert('Action REJECTED by Operator.');
   const queue = document.getElementById('approval-queue-body');
   if (queue) {
-    queue.innerHTML = `<div style="padding: 16px; color: #f43f5e; font-weight: 500;">✕ Action REJECTED. No operational mutation performed.</div>`;
+    queue.innerHTML = `<div style="padding: 16px; color: var(--accent-rose); font-weight: 500;">✕ Action REJECTED. No operational mutation performed.</div>`;
   }
 };
 
