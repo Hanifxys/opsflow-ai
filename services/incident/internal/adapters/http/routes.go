@@ -1,0 +1,102 @@
+package http
+
+import (
+	"net/http"
+	"strings"
+
+	"github.com/google/uuid"
+	"github.com/opsflow/common/httputil"
+	"github.com/opsflow/common/middleware"
+)
+
+func RegisterRoutes(mux *http.ServeMux, handler *IncidentHandler, jwtSecret string) {
+	authMw := middleware.AuthMiddleware(jwtSecret)
+
+	// Single dispatch handler for / and /{id}...
+	rootHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		path := strings.TrimPrefix(r.URL.Path, "/api/v1/incidents")
+		path = strings.TrimPrefix(path, "/")
+
+		// Base root route: GET / or POST /
+		if path == "" {
+			if r.Method == http.MethodPost {
+				middleware.RequirePermission("incident:create")(http.HandlerFunc(handler.Create)).ServeHTTP(w, r)
+				return
+			}
+			if r.Method == http.MethodGet {
+				middleware.RequirePermission("incident:read")(http.HandlerFunc(handler.List)).ServeHTTP(w, r)
+				return
+			}
+			httputil.WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", httputil.RequestID(r.Context()))
+			return
+		}
+
+		// Subpath: {id}, {id}/resolve, {id}/comments, {id}/events
+		parts := strings.Split(path, "/")
+		id, err := uuid.Parse(parts[0])
+		if err != nil {
+			httputil.WriteError(w, http.StatusBadRequest, "INVALID_ID", "Invalid incident ID", httputil.RequestID(r.Context()))
+			return
+		}
+
+		if len(parts) == 1 {
+			if r.Method == http.MethodGet {
+				middleware.RequirePermission("incident:read")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					handler.Get(w, r, id)
+				})).ServeHTTP(w, r)
+				return
+			}
+			if r.Method == http.MethodPatch {
+				middleware.RequirePermission("incident:update")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					handler.UpdateStatus(w, r, id)
+				})).ServeHTTP(w, r)
+				return
+			}
+			httputil.WriteError(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed", httputil.RequestID(r.Context()))
+			return
+		}
+
+		if len(parts) == 2 {
+			sub := parts[1]
+			switch sub {
+			case "resolve":
+				if r.Method == http.MethodPost {
+					middleware.RequirePermission("incident:resolve")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						handler.Resolve(w, r, id)
+					})).ServeHTTP(w, r)
+					return
+				}
+			case "comments":
+				if r.Method == http.MethodPost {
+					middleware.RequirePermission("incident:update")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						handler.AddComment(w, r, id)
+					})).ServeHTTP(w, r)
+					return
+				}
+				if r.Method == http.MethodGet {
+					middleware.RequirePermission("incident:read")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						handler.ListComments(w, r, id)
+					})).ServeHTTP(w, r)
+					return
+				}
+			case "events":
+				if r.Method == http.MethodPost {
+					middleware.RequirePermission("incident:update")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						handler.AddEvent(w, r, id)
+					})).ServeHTTP(w, r)
+					return
+				}
+				if r.Method == http.MethodGet {
+					middleware.RequirePermission("incident:read")(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+						handler.ListEvents(w, r, id)
+					})).ServeHTTP(w, r)
+					return
+				}
+			}
+		}
+
+		httputil.WriteError(w, http.StatusNotFound, "NOT_FOUND", "Endpoint not found", httputil.RequestID(r.Context()))
+	})
+
+	mux.Handle("/", authMw(rootHandler))
+}

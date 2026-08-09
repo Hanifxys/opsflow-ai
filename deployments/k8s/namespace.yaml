@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: opsflow
+  labels:
+    app.kubernetes.io/name: opsflow
+    app.kubernetes.io/part-of: opsflow-platform

@@ -1,0 +1,11 @@
+go 1.22.0
+
+use (
+	./pkg/common
+	./services/ai-gateway
+	./services/auth
+	./services/gateway
+	./services/incident
+	./services/notification
+	./services/registry
+)
