@@ -1,0 +1,27 @@
+name: Deploy to Free Cloud VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-vps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Free VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        if: ${{ secrets.FREE_VPS_HOST != '' }}
+        with:
+          host: ${{ secrets.FREE_VPS_HOST }}
+          username: ${{ secrets.FREE_VPS_USER || 'ubuntu' }}
+          key: ${{ secrets.FREE_VPS_SSH_KEY }}
+          script: |
+            cd /opt/opsflow-ai || git clone https://github.com/Hanifxys/opsflow-ai.git /opt/opsflow-ai
+            cd /opt/opsflow-ai
+            git pull origin main
+            chmod +x scripts/deploy-free-cloud.sh
+            ./scripts/deploy-free-cloud.sh
