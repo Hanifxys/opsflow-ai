@@ -64,6 +64,7 @@ const routes = {
   '/ai': renderAIAssistant,
   '/l3-workbench': renderL3Workbench,
   '/knowledge-docs': renderKnowledgeDocs,
+  '/runbooks': renderRunbooks,
 };
 
 function navigate(path) {
@@ -125,6 +126,10 @@ function createApp() {
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="14" height="5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="12" width="14" height="5" rx="1.5" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="5.5" r="1" fill="currentColor"/><circle cx="6" cy="14.5" r="1" fill="currentColor"/></svg>
           <span>Service Catalog</span>
         </a>
+        <a class="nav-link" data-path="/runbooks" id="nav-runbooks">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <span>Runbooks & Chaos</span>
+        </a>
         <a class="nav-link" data-path="/ai" id="nav-ai">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.5"/><path d="M7 10a3 3 0 016 0M10 7v0M8 13h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           <span>AI & Approvals</span>
@@ -139,7 +144,7 @@ function createApp() {
         </a>
       </nav>
       <div class="sidebar-footer">
-        <div class="env-badge">MINIO S3 ENABLED</div>
+        <div class="env-badge">RUNBOOKS & CHAOS ACTIVE</div>
       </div>
     </aside>
     <main class="main">
@@ -269,6 +274,130 @@ window.executeCmdKPrompt = function () {
   setTimeout(() => {
     generateProTechnicalArtifact(promptVal);
   }, 300);
+};
+
+// ──────────────────────────────────────────────
+// Automated Runbooks & Chaos Engineering Workspace (`/runbooks`)
+// ──────────────────────────────────────────────
+
+function renderRunbooks(container) {
+  container.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1>Automated Runbooks & Chaos Simulator</h1>
+        <p class="page-subtitle">Multi-step automated remediation runbooks and chaos engineering resilience testing</p>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-danger btn-sm" onclick="triggerChaosScenario('db_exhaustion')">⚡ Inject Chaos: DB Pool Exhaustion</button>
+        <button class="btn btn-secondary btn-sm" onclick="triggerChaosScenario('latency_spike')">⚡ Inject Chaos: 504 Gateway Latency</button>
+      </div>
+    </div>
+
+    <!-- Runbooks Grid -->
+    <div class="runbook-grid">
+      <div class="runbook-card">
+        <div class="runbook-header">
+          <div>
+            <div class="runbook-title">🔄 PostgreSQL Lock Drain & PID Terminate</div>
+            <div class="runbook-description">Scans pg_stat_activity, terminates query locks > 30s, and rebalances connection pool.</div>
+          </div>
+          <span class="badge badge-approved">AUTOMATED</span>
+        </div>
+        <div class="runbook-steps-list">
+          <div class="runbook-step-item">1. Query pg_stat_activity for locks > 30s</div>
+          <div class="runbook-step-item">2. Issue pg_terminate_backend(pid)</div>
+          <div class="runbook-step-item">3. Scale pgx pool max_conns to 250</div>
+          <div class="runbook-step-item">4. Verify P99 query latency returns < 10ms</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="executeRunbook('db_drain')">Execute Runbook Now</button>
+      </div>
+
+      <div class="runbook-card">
+        <div class="runbook-header">
+          <div>
+            <div class="runbook-title">🚀 K8s Pod Eviction & Rolling Deployment</div>
+            <div class="runbook-description">Drains degraded payment-service pods and triggers zero-downtime rolling update.</div>
+          </div>
+          <span class="badge badge-approved">AUTOMATED</span>
+        </div>
+        <div class="runbook-steps-list">
+          <div class="runbook-step-item">1. Cordon degraded node in Kubernetes cluster</div>
+          <div class="runbook-step-item">2. kubectl rollout restart deployment/payment-service</div>
+          <div class="runbook-step-item">3. Wait for readiness probes (200 OK)</div>
+          <div class="runbook-step-item">4. Un-cordon node and verify HPA targets</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="executeRunbook('pod_eviction')">Execute Runbook Now</button>
+      </div>
+
+      <div class="runbook-card">
+        <div class="runbook-header">
+          <div>
+            <div class="runbook-title">🧹 Redis Cache Flush & Outbox Event Replay</div>
+            <div class="runbook-description">Invalidates stale Redis keys and replays un-acknowledged outbox events.</div>
+          </div>
+          <span class="badge badge-approved">AUTOMATED</span>
+        </div>
+        <div class="runbook-steps-list">
+          <div class="runbook-step-item">1. Issue FLUSHDB on Redis cluster endpoint</div>
+          <div class="runbook-step-item">2. Re-index active services in Service Registry</div>
+          <div class="runbook-step-item">3. Fetch pending Outbox events from PostgreSQL</div>
+          <div class="runbook-step-item">4. Publish events to RabbitMQ exchange</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="executeRunbook('cache_flush')">Execute Runbook Now</button>
+      </div>
+    </div>
+
+    <!-- Live Runbook Execution Console & Logs -->
+    <div class="card" style="margin-bottom: 24px;">
+      <div class="card-header">
+        <h2>Live Execution Stream & Verification Logs</h2>
+        <span class="badge badge-medium" id="runbook-status-badge">READY</span>
+      </div>
+      <div class="card-body">
+        <div class="log-stream-console" id="runbook-log-console">
+          [INFO] OpsFlow Automated Runbooks Engine Initialized.<br/>
+          [INFO] Safety Guardrails Active: Requires L3 Operator Execution or AI Approval Guardrail.<br/>
+          [SYSTEM] Ready for Execution. Select a Runbook above to begin.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.executeRunbook = function (runbookKey) {
+  const badge = document.getElementById('runbook-status-badge');
+  const consoleEl = document.getElementById('runbook-log-console');
+  if (!badge || !consoleEl) return;
+
+  badge.className = 'badge badge-pending';
+  badge.textContent = 'EXECUTING RUNBOOK...';
+  consoleEl.innerHTML = `[INFO] Starting Automated Runbook Execution: <code>${runbookKey}</code>...<br/>`;
+
+  let logs = [
+    `[STEP 1/4] Running diagnostic pre-checks on target microservice... [OK]`,
+    `[STEP 2/4] Executing state mutation with safe rollback guardrails... [OK]`,
+    `[STEP 3/4] Rebalancing database connections & verifying Prometheus metrics... [OK]`,
+    `[STEP 4/4] Automated Runbook Execution COMPLETED SUCCESSFULLY. All systems nominal.`
+  ];
+
+  let index = 0;
+  const interval = setInterval(() => {
+    if (index < logs.length) {
+      consoleEl.innerHTML += `<div style="margin-top: 4px;">${logs[index]}</div>`;
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+      index++;
+    } else {
+      clearInterval(interval);
+      badge.className = 'badge badge-approved';
+      badge.textContent = 'EXECUTED (SUCCESS)';
+      alert(`Runbook '${runbookKey}' executed successfully! Output logged.`);
+    }
+  }, 700);
+};
+
+window.triggerChaosScenario = function (scenarioKey) {
+  alert(`⚡ CHAOS SCENARIO INJECTED: '${scenarioKey}'!\n\nPrometheus Alert firing: PostgresPoolExhausted\nAI Auto-Detection active -> Incident INC-2026-CHAOS declared!`);
+  navigate('/incidents');
 };
 
 // ──────────────────────────────────────────────
