@@ -2,7 +2,7 @@
 # OpsFlow — 100% Free Self-Hosted Infrastructure & Observability Stack
 # =============================================================================
 # Usage: docker compose up -d
-# Includes: Portainer (9000), Grafana (3000), MinIO (9001), RabbitMQ (15672),
+# Includes: Portainer (9005), Grafana (3000), MinIO (9001/9000), RabbitMQ (15672),
 #           Prometheus (9090), Elasticsearch (9200), PostgreSQL (5432), Redis (6379)
 
 services:
@@ -19,7 +19,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_data:/data
     ports:
-      - "9000:9000"
+      - "9005:9000"
       - "9443:9443"
     networks:
       - opsflow-net
